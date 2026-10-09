@@ -3,6 +3,7 @@ import { Building2, ImageUp, KeyRound, Save, Trash2, UserRound } from 'lucide-re
 import { ROLE_LABELS, arabicError } from '../lib/format.js';
 import { Alert, Button, Card, Field, PageHeader, inputClass, useToast } from '../ui.jsx';
 import { OfficeMark } from '../screens/AuthShell.jsx';
+import { BRAND } from '../brand.jsx';
 import { ChangePasswordForm } from '../screens/AccountScreens.jsx';
 
 const MAX_LOGO_SIDE = 320;
@@ -73,13 +74,13 @@ function OfficeSettings({ supabase, settings, onSettingsChange }) {
 
   return (
     <Card as="section" className="p-6 sm:p-8">
-      <SectionTitle icon={Building2} title="بيانات المكتب" hint="تظهر في أعلى النظام وفي صفحة الدخول لجميع الموظفين." />
+      <SectionTitle icon={Building2} title="بيانات المكتب" hint="تظهر في أعلى النظام وفي صفحة الدخول لجميع الموظفين. اتركها فارغة لاستخدام اسم الشركة وشعارها الرسميين." />
       <div className="space-y-6">
         <Field label="اسم المكتب">
-          {(id) => <input id={id} className={inputClass} value={name} onChange={(e) => setName(e.target.value)} placeholder="مثال: مكتب العدالة للمحاماة" maxLength={120} />}
+          {(id) => <input id={id} className={inputClass} value={name} onChange={(e) => setName(e.target.value)} placeholder={BRAND.name} maxLength={120} />}
         </Field>
         <div>
-          <p className="mb-2 text-sm font-medium text-ink-soft">شعار المكتب <span className="text-mute">(اختياري)</span></p>
+          <p className="mb-2 text-sm font-medium text-ink-soft">شعار مخصص <span className="text-mute">(اختياري، يحل محل رمز الشركة)</span></p>
           <div className="flex flex-wrap items-center gap-4">
             <OfficeMark settings={{ logo }} size="lg" />
             <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={pick} aria-label="رفع الشعار" />
@@ -107,7 +108,7 @@ function OfficeSettings({ supabase, settings, onSettingsChange }) {
 function SectionTitle({ icon: Icon, title, hint }) {
   return (
     <div className="mb-7 flex items-start gap-3">
-      <span className="mt-0.5 flex size-9 shrink-0 items-center justify-center rounded-lg bg-acc-soft text-acc">
+      <span className="mt-0.5 flex size-9 shrink-0 items-center justify-center rounded-lg bg-gold-soft text-gold-deep">
         <Icon className="size-4" strokeWidth={1.75} />
       </span>
       <div>

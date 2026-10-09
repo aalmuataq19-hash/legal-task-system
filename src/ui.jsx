@@ -124,7 +124,8 @@ export function PageHeader({ title, subtitle, action }) {
     <div className="mb-8 flex flex-wrap items-end justify-between gap-4">
       <div>
         <h2 className="text-2xl font-bold text-ink sm:text-3xl">{title}</h2>
-        {subtitle && <p className="mt-1.5 text-sm text-mute">{subtitle}</p>}
+        <span className="mt-3 block h-0.5 w-10 rounded-full bg-gold" aria-hidden="true" />
+        {subtitle && <p className="mt-3 text-sm text-mute">{subtitle}</p>}
       </div>
       {action}
     </div>

@@ -1,26 +1,33 @@
 @import "tailwindcss";
 
-/* هوية بصرية مستوحاة من «مِداد»: عاجي دافئ، فحمي، رمادي دافئ، ولون تفاعلي واحد زمردي */
+/* هوية شركة عبدالمجيد صالح المعتق: عاجي دافئ، كحلي الشعار للتفاعل، وذهبي الشعار للمسات الهوية */
 @theme {
   --font-sans: "IBM Plex Sans Arabic", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Tahoma, sans-serif;
 
-  --color-paper: #faf9f6;
+  --color-paper: #faf8f4;
   --color-card: #ffffff;
-  --color-ink: #1a1a1a;
-  --color-ink-soft: #45413b;
-  --color-mute: #8a8378;
-  --color-line: #e8e4dd;
-  --color-line-strong: #d8d2c7;
-  --color-mist: #f1efea;
+  --color-ink: #18202f;
+  --color-ink-soft: #434b5b;
+  --color-mute: #878075;
+  --color-line: #e9e4da;
+  --color-line-strong: #d8d0c1;
+  --color-mist: #f2efe8;
 
-  --color-acc: #1f4d3d;
-  --color-acc-hover: #173b2f;
-  --color-acc-soft: #e9f0ed;
+  /* كحلي الشعار: اللون التفاعلي الوحيد */
+  --color-acc: #1b2e44;
+  --color-acc-hover: #132338;
+  --color-acc-soft: #eaeef3;
 
-  --color-amber: #8c6409;
-  --color-amber-soft: #fbf3df;
-  --color-copper: #a0522d;
-  --color-copper-soft: #f7ece6;
+  /* ذهبي الشعار: للزخرفة والهوية فقط */
+  --color-gold: #ac8f51;
+  --color-gold-deep: #86692f;
+  --color-gold-soft: #f6f0e3;
+
+  /* تنبيهات هادئة: متأخرة / قريبة الانتهاء */
+  --color-amber: #8b5e1a;
+  --color-amber-soft: #f8eedc;
+  --color-copper: #9b3b2c;
+  --color-copper-soft: #f6e8e4;
 }
 
 html {
@@ -36,8 +43,8 @@ body {
 }
 
 ::selection {
-  background: var(--color-acc-soft);
-  color: var(--color-acc);
+  background: var(--color-gold-soft);
+  color: var(--color-ink);
 }
 
 /* حقول التاريخ تبقى من اليسار لليمين حتى تُقرأ الأرقام بشكل صحيح */

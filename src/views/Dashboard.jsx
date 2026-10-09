@@ -107,6 +107,7 @@ export default function Dashboard({ member, isAdmin, tasks, members, onOpenTasks
         <h2 className="mt-3 text-3xl font-bold leading-tight text-ink sm:text-4xl">
           {greeting()}، {firstName}
         </h2>
+        <span className="mt-4 block h-0.5 w-10 rounded-full bg-gold" aria-hidden="true" />
         <p className="mt-4 max-w-2xl text-lg leading-9 text-ink-soft">{summarySentence(stats, isAdmin)}</p>
         <div className="mt-7 flex flex-wrap gap-3">
           {isAdmin && (

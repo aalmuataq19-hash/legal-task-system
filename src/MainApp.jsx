@@ -3,7 +3,7 @@ import { House, ListChecks, LogOut, RefreshCw, Settings as SettingsIcon, Users }
 import { fetchAll } from './lib/supabase.js';
 import { ROLE_LABELS, arabicError } from './lib/format.js';
 import { Alert, IconButton, Spinner, useConfirm } from './ui.jsx';
-import { OfficeMark } from './screens/AuthShell.jsx';
+import { OfficeMark, officeName } from './screens/AuthShell.jsx';
 import Dashboard from './views/Dashboard.jsx';
 import Tasks from './views/Tasks.jsx';
 import Employees from './views/Employees.jsx';
@@ -76,7 +76,7 @@ export default function MainApp({ supabase, member, settings, onSettingsChange, 
           <div className="flex min-w-0 items-center gap-3">
             <OfficeMark settings={settings} size="md" />
             <div className="min-w-0 leading-tight">
-              <h1 className="truncate text-[15px] font-bold text-ink">{settings.office_name || 'المهام القانونية'}</h1>
+              <h1 className="truncate text-[15px] font-bold text-acc">{officeName(settings)}</h1>
               <p className="mt-0.5 truncate text-xs text-mute">
                 {member.name} · {ROLE_LABELS[member.role]}
               </p>

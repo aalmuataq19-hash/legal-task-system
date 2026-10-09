@@ -7,6 +7,7 @@ import AuthShell from './AuthShell.jsx';
 
 const SUPABASE_NEW = 'https://supabase.com/dashboard/new';
 const SUPABASE_SQL = 'https://supabase.com/dashboard/project/_/sql/new';
+const SUPABASE_KEYS = 'https://supabase.com/dashboard/project/_/settings/api-keys';
 
 function Step({ number, title, done, children }) {
   return (
@@ -118,13 +119,17 @@ export default function SetupWizard() {
 
       <Step number="3" title="انسخ بيانات الربط واختبرها" done={verified}>
         <p>
-          من الصفحة الرئيسية لمشروعك في Supabase (أو من <b className="ltr">Project Settings → API Keys</b>) انسخ <b>Project URL</b> والمفتاح العام <b className="ltr">publishable</b> (أو <b className="ltr">anon public</b>). لا تستخدم المفتاح السري أبداً.
+          <b>أولاً، الرابط:</b> وأنت داخل مشروعك في Supabase، انسخ عنوان الصفحة من شريط المتصفح (يبدأ بـ <span className="ltr">supabase.com/dashboard/project/</span>) والصقه في الخانة الأولى، والنظام يستخرج الرابط الصحيح تلقائياً.
         </p>
         <Field label="Project URL">
           {(id) => (
-            <input id={id} dir="ltr" className={`${inputClass} text-left`} placeholder="https://xxxx.supabase.co" value={url} onChange={(e) => { setUrl(e.target.value); setResult(null); }} />
+            <input id={id} dir="ltr" className={`${inputClass} text-left`} placeholder="https://xxxx.supabase.co أو عنوان صفحة المشروع" value={url} onChange={(e) => { setUrl(e.target.value); setResult(null); }} />
           )}
         </Field>
+        <p>
+          <b>ثانياً، المفتاح:</b> افتح صفحة المفاتيح واختر مشروعك، ثم انسخ المفتاح الذي اسمه <b className="ltr">Publishable key</b> ويبدأ بـ <span className="ltr">sb_publishable_</span>. لا تنسخ <b className="ltr">Secret key</b> أبداً.
+        </p>
+        <LinkButton href={SUPABASE_KEYS}>فتح صفحة المفاتيح</LinkButton>
         <Field label="المفتاح العام (publishable / anon)">
           {(id) => (
             <input id={id} dir="ltr" className={`${inputClass} text-left font-mono text-sm`} placeholder="sb_publishable_... أو eyJ..." value={key} onChange={(e) => { setKey(e.target.value); setResult(null); }} />

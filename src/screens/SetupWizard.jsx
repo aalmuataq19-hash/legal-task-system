@@ -13,13 +13,13 @@ function Step({ number, title, done, children }) {
   return (
     <section className="flex gap-3">
       <div
-        className={`flex size-8 shrink-0 items-center justify-center rounded-full text-sm font-bold ${done ? 'bg-emerald-500 text-white' : 'bg-indigo-100 text-indigo-800'}`}
+        className={`flex size-8 shrink-0 items-center justify-center rounded-full text-sm font-bold ${done ? 'bg-acc text-paper' : 'border border-line bg-paper text-acc'}`}
       >
         {done ? <CircleCheck className="size-5" /> : number}
       </div>
       <div className="min-w-0 flex-1 pb-6">
-        <h3 className="mb-2 font-bold text-slate-800">{title}</h3>
-        <div className="space-y-3 text-sm leading-7 text-slate-600">{children}</div>
+        <h3 className="mb-2 font-semibold text-ink">{title}</h3>
+        <div className="space-y-3 text-sm leading-7 text-ink-soft">{children}</div>
       </div>
     </section>
   );
@@ -31,7 +31,7 @@ function LinkButton({ href, children }) {
       href={href}
       target="_blank"
       rel="noreferrer"
-      className="inline-flex items-center gap-2 rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm font-bold text-slate-700 hover:bg-slate-50"
+      className="inline-flex items-center gap-2 rounded-lg border border-line bg-transparent px-4 py-2.5 text-sm font-medium text-acc transition-colors hover:bg-acc-soft"
     >
       <ExternalLink className="size-4" />
       {children}
@@ -111,9 +111,9 @@ export default function SetupWizard() {
           <CopyButton text={() => sql} label="نسخ كود الإعداد" copiedLabel="تم نسخ الكود" variant="primary" />
           <LinkButton href={SUPABASE_SQL}>فتح SQL Editor</LinkButton>
         </div>
-        <details className="rounded-xl border border-slate-200 bg-slate-50 p-3">
-          <summary className="cursor-pointer font-semibold text-slate-700">عرض الكود</summary>
-          <textarea readOnly value={sql} dir="ltr" className="mt-2 h-48 w-full rounded-lg border border-slate-200 bg-white p-2 font-mono text-xs" onFocus={(e) => e.target.select()} />
+        <details className="rounded-lg border border-line bg-paper p-3">
+          <summary className="cursor-pointer font-medium text-ink-soft">عرض الكود</summary>
+          <textarea readOnly value={sql} dir="ltr" className="mt-2 h-48 w-full rounded-lg border border-line bg-card p-2 font-mono text-xs" onFocus={(e) => e.target.select()} />
         </details>
       </Step>
 
@@ -146,17 +146,17 @@ export default function SetupWizard() {
         {verified ? (
           <>
             <p>انسخ البيانات التالية وأرسلها إلى Claude في المحادثة، وسيفعّل الرابط لك ولجميع الموظفين خلال دقائق. بعدها افتح الرابط وأنشئ حساب المدير.</p>
-            <pre dir="ltr" className="overflow-x-auto rounded-xl bg-slate-900 p-3 text-left text-xs text-slate-100">{message}</pre>
+            <pre dir="ltr" className="overflow-x-auto rounded-lg bg-ink p-3 text-left text-xs leading-6 text-paper">{message}</pre>
             <CopyButton text={message} label="نسخ البيانات" variant="primary" />
           </>
         ) : (
-          <p className="flex items-center gap-2 text-slate-500">
+          <p className="flex items-center gap-2 text-mute">
             <Send className="size-4" /> تظهر هنا بعد نجاح اختبار الاتصال.
           </p>
         )}
       </Step>
 
-      <p className="flex items-start gap-2 text-xs leading-6 text-slate-500">
+      <p className="flex items-start gap-2 text-xs leading-6 text-mute">
         <Database className="mt-1 size-4 shrink-0" />
         المفتاح العام آمن للوضع في الموقع، لأن قاعدة البيانات محمية بصلاحيات تمنع أي شخص من رؤية البيانات بدون تسجيل دخول.
       </p>

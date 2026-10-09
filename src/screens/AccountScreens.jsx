@@ -60,8 +60,8 @@ export function NoAccess({ disabled, onSignOut }) {
   return (
     <AuthShell title={disabled ? 'الحساب معطّل' : 'لا توجد صلاحية'}>
       <div className="flex flex-col items-center gap-4 text-center">
-        <Ban className="size-12 text-red-500" />
-        <p className="text-slate-600">
+        <Ban className="size-10 text-copper" strokeWidth={1.5} />
+        <p className="leading-8 text-ink-soft">
           {disabled
             ? 'تم تعطيل هذا الحساب. تواصل مع مدير المكتب إذا كنت تعتقد أن هذا خطأ.'
             : 'هذا الحساب غير مسجل في النظام. اطلب من مدير المكتب إضافتك.'}
@@ -87,8 +87,8 @@ export function ConnectionError({ message, onRetry, onSignOut }) {
   return (
     <AuthShell title="تعذر الاتصال">
       <div className="flex flex-col items-center gap-4 text-center">
-        <WifiOff className="size-12 text-slate-400" />
-        <p className="text-slate-700">{message}</p>
+        <WifiOff className="size-10 text-mute" strokeWidth={1.5} />
+        <p className="leading-8 text-ink-soft">{message}</p>
         {/تعذر الاتصال/.test(message) && (
           <Alert tone="info" className="text-right">
             للمدير: إذا لم يُستخدم النظام لأكثر من أسبوع، قد يكون مشروع Supabase المجاني متوقفاً مؤقتاً. افتح لوحة Supabase واضغط <b>Restore project</b> ثم أعد المحاولة.

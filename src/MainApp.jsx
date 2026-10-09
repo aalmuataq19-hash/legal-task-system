@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useState } from 'react';
-import { LayoutDashboard, ListTodo, LogOut, RefreshCw, Settings as SettingsIcon, Users } from 'lucide-react';
+import { House, ListChecks, LogOut, RefreshCw, Settings as SettingsIcon, Users } from 'lucide-react';
 import { fetchAll } from './lib/supabase.js';
 import { ROLE_LABELS, arabicError } from './lib/format.js';
-import { Alert, Button, IconButton, Spinner, useConfirm } from './ui.jsx';
+import { Alert, IconButton, Spinner, useConfirm } from './ui.jsx';
 import { OfficeMark } from './screens/AuthShell.jsx';
 import Dashboard from './views/Dashboard.jsx';
 import Tasks from './views/Tasks.jsx';
@@ -61,8 +61,8 @@ export default function MainApp({ supabase, member, settings, onSettingsChange, 
   };
 
   const nav = [
-    { id: 'dashboard', label: 'الرئيسية', icon: LayoutDashboard },
-    { id: 'tasks', label: 'المهام', icon: ListTodo },
+    { id: 'dashboard', label: 'الرئيسية', icon: House },
+    { id: 'tasks', label: 'المهام', icon: ListChecks },
     ...(isAdmin ? [{ id: 'employees', label: 'الموظفون', icon: Users }] : []),
     { id: 'settings', label: 'الإعدادات', icon: SettingsIcon },
   ];
@@ -70,82 +70,89 @@ export default function MainApp({ supabase, member, settings, onSettingsChange, 
   const shared = { supabase, member, isAdmin, tasks: tasks ?? [], members, refresh, onMemberChange };
 
   return (
-    <div className="min-h-dvh pb-24 sm:pb-8">
-      <header className="sticky top-0 z-40 border-b border-slate-200 bg-white/95 backdrop-blur">
-        <div className="mx-auto flex max-w-7xl items-center justify-between gap-3 px-4 py-3">
+    <div className="min-h-dvh pb-28 md:pb-20">
+      <header className="sticky top-0 z-40 border-b border-line bg-paper/90 backdrop-blur-md">
+        <div className="mx-auto flex max-w-5xl items-center justify-between gap-4 px-5 py-3 sm:px-8">
           <div className="flex min-w-0 items-center gap-3">
-            <OfficeMark settings={settings} className="size-11" />
-            <div className="min-w-0">
-              <h1 className="truncate text-base font-extrabold text-slate-800 sm:text-lg">{settings.office_name || 'نظام إدارة المهام القانونية'}</h1>
-              <p className="truncate text-xs text-slate-500 sm:text-sm">
+            <OfficeMark settings={settings} size="md" />
+            <div className="min-w-0 leading-tight">
+              <h1 className="truncate text-[15px] font-bold text-ink">{settings.office_name || 'المهام القانونية'}</h1>
+              <p className="mt-0.5 truncate text-xs text-mute">
                 {member.name} · {ROLE_LABELS[member.role]}
               </p>
             </div>
           </div>
-          <div className="flex shrink-0 items-center gap-1">
+
+          <nav className="hidden items-center gap-1 rounded-lg bg-mist p-1 md:flex" aria-label="التنقل">
+            {nav.map((item) => (
+              <button
+                key={item.id}
+                type="button"
+                aria-current={view === item.id ? 'page' : undefined}
+                onClick={() => (item.id === 'tasks' ? openTasks() : setView(item.id))}
+                className={`flex items-center gap-2 rounded-md px-4 py-1.5 text-sm transition-colors duration-200 ${view === item.id ? 'bg-card font-semibold text-ink shadow-[0_1px_2px_rgba(26,26,26,0.06)]' : 'text-mute hover:text-ink'}`}
+              >
+                <item.icon className="size-4" strokeWidth={1.75} />
+                {item.label}
+              </button>
+            ))}
+          </nav>
+
+          <div className="flex shrink-0 items-center gap-1.5">
             <IconButton
               icon={refreshing ? Spinner : RefreshCw}
               label="تحديث"
               onClick={refresh}
-              className="text-slate-500 hover:bg-slate-100"
+              className="border border-line text-mute hover:bg-card hover:text-ink"
             />
-            <Button variant="ghost" icon={LogOut} onClick={signOut} aria-label="تسجيل الخروج" className="text-red-600 hover:bg-red-50">
-              <span className="hidden sm:inline">خروج</span>
-            </Button>
+            <IconButton icon={LogOut} label="تسجيل الخروج" onClick={signOut} className="border border-line text-mute hover:bg-card hover:text-copper" />
           </div>
         </div>
-        <nav className="mx-auto hidden max-w-7xl gap-1 px-4 pb-2 sm:flex">
-          {nav.map((item) => (
-            <button
-              key={item.id}
-              type="button"
-              onClick={() => (item.id === 'tasks' ? openTasks() : setView(item.id))}
-              className={`flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-bold transition-colors ${view === item.id ? 'bg-indigo-700 text-white' : 'text-slate-600 hover:bg-slate-100'}`}
-            >
-              <item.icon className="size-4" />
-              {item.label}
-            </button>
-          ))}
-        </nav>
       </header>
 
-      <main className="mx-auto max-w-7xl px-4 py-5 sm:py-8">
+      <main className="mx-auto max-w-5xl px-5 pt-8 sm:px-8 sm:pt-12">
         {loadError && (
-          <Alert className="mb-4">
+          <Alert className="mb-6">
             {arabicError(loadError)}{' '}
-            <button type="button" onClick={refresh} className="font-bold underline">
+            <button type="button" onClick={refresh} className="font-semibold underline underline-offset-4">
               إعادة المحاولة
             </button>
           </Alert>
         )}
         {tasks === null && !loadError ? (
-          <div className="flex justify-center py-20">
-            <Spinner className="size-8" />
+          <div className="flex justify-center py-24">
+            <Spinner className="size-6" />
           </div>
         ) : (
-          <>
+          <div key={view} className="fade">
             {view === 'dashboard' && <Dashboard {...shared} onOpenTasks={openTasks} />}
             {view === 'tasks' && <Tasks key={taskFilter.key} {...shared} initialFilter={taskFilter} />}
             {view === 'employees' && isAdmin && <Employees {...shared} />}
-            {view === 'settings' && (
-              <Settings {...shared} settings={settings} onSettingsChange={onSettingsChange} />
-            )}
-          </>
+            {view === 'settings' && <Settings {...shared} settings={settings} onSettingsChange={onSettingsChange} />}
+          </div>
         )}
       </main>
 
-      <nav className="fixed inset-x-0 bottom-0 z-40 flex border-t border-slate-200 bg-white/95 pb-[env(safe-area-inset-bottom)] backdrop-blur sm:hidden">
-        {nav.map((item) => (
-          <button
-            key={item.id}
-            type="button"
-            onClick={() => (item.id === 'tasks' ? openTasks() : setView(item.id))}
-            className={`flex flex-1 flex-col items-center gap-0.5 py-2 text-xs font-bold ${view === item.id ? 'text-indigo-700' : 'text-slate-500'}`}
-          >
-            <item.icon className="size-5" />
-            {item.label}
-          </button>
-        ))}
+      <nav
+        aria-label="التنقل"
+        className="fixed inset-x-0 bottom-0 z-40 flex border-t border-line bg-paper/95 pb-[env(safe-area-inset-bottom)] backdrop-blur-md md:hidden"
+      >
+        {nav.map((item) => {
+          const active = view === item.id;
+          return (
+            <button
+              key={item.id}
+              type="button"
+              aria-current={active ? 'page' : undefined}
+              onClick={() => (item.id === 'tasks' ? openTasks() : setView(item.id))}
+              className={`relative flex flex-1 flex-col items-center gap-1 pb-2 pt-3 text-[11px] transition-colors duration-200 ${active ? 'font-semibold text-acc' : 'text-mute'}`}
+            >
+              <span className={`absolute top-0 h-0.5 w-8 rounded-full transition-colors duration-200 ${active ? 'bg-acc' : 'bg-transparent'}`} />
+              <item.icon className="size-5" strokeWidth={1.75} />
+              {item.label}
+            </button>
+          );
+        })}
       </nav>
     </div>
   );

@@ -1,15 +1,18 @@
 import { createContext, useCallback, useContext, useEffect, useId, useRef, useState } from 'react';
-import { Check, CircleAlert, CircleCheck, Copy, Eye, EyeOff, LoaderCircle, X } from 'lucide-react';
+import { createPortal } from 'react-dom';
+import { Check, ChevronDown, CircleAlert, CircleCheck, Copy, Eye, EyeOff, LoaderCircle, X } from 'lucide-react';
 
 export const inputClass =
-  'w-full rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-base text-slate-800 placeholder:text-slate-400 ' +
-  'focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-200 disabled:bg-slate-100 disabled:text-slate-500';
+  'w-full rounded-lg border border-line bg-card px-3.5 py-2.5 text-base text-ink placeholder:text-mute/70 transition-colors ' +
+  'focus:border-acc focus:outline-none focus:ring-4 focus:ring-acc-soft disabled:bg-mist disabled:text-mute';
 
 const variants = {
-  primary: 'bg-indigo-700 text-white hover:bg-indigo-800 focus-visible:ring-indigo-300',
-  secondary: 'bg-white text-slate-700 border border-slate-300 hover:bg-slate-50 focus-visible:ring-slate-200',
-  danger: 'bg-red-600 text-white hover:bg-red-700 focus-visible:ring-red-300',
-  ghost: 'text-slate-600 hover:bg-slate-100 focus-visible:ring-slate-200',
+  primary: 'bg-acc text-paper hover:bg-acc-hover focus-visible:ring-acc-soft',
+  secondary: 'bg-card text-ink-soft border border-line hover:border-line-strong hover:bg-paper focus-visible:ring-mist',
+  outline: 'bg-transparent text-acc border border-line hover:bg-acc-soft focus-visible:ring-acc-soft',
+  ghost: 'text-ink-soft hover:bg-mist focus-visible:ring-mist',
+  danger: 'bg-copper text-paper hover:brightness-90 focus-visible:ring-copper-soft',
+  dangerQuiet: 'bg-transparent text-copper border border-line hover:bg-copper-soft focus-visible:ring-copper-soft',
 };
 
 export function Button({ variant = 'primary', icon: Icon, loading = false, className = '', children, disabled, ...props }) {
@@ -17,10 +20,10 @@ export function Button({ variant = 'primary', icon: Icon, loading = false, class
     <button
       type="button"
       disabled={disabled || loading}
-      className={`inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-bold transition-colors focus-visible:outline-none focus-visible:ring-4 disabled:cursor-not-allowed disabled:opacity-60 ${variants[variant]} ${className}`}
+      className={`inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2.5 text-sm font-medium transition-colors duration-200 focus-visible:outline-none focus-visible:ring-4 disabled:cursor-not-allowed disabled:opacity-50 ${variants[variant]} ${className}`}
       {...props}
     >
-      {loading ? <LoaderCircle className="size-4 animate-spin" /> : Icon && <Icon className="size-4 shrink-0" />}
+      {loading ? <LoaderCircle className="size-4 animate-spin" /> : Icon && <Icon className="size-4 shrink-0" strokeWidth={1.75} />}
       {children}
     </button>
   );
@@ -32,10 +35,10 @@ export function IconButton({ icon: Icon, label, className = '', ...props }) {
       type="button"
       title={label}
       aria-label={label}
-      className={`inline-flex size-9 items-center justify-center rounded-lg transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-300 ${className}`}
+      className={`inline-flex size-9 items-center justify-center rounded-lg transition-colors duration-200 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-acc-soft ${className}`}
       {...props}
     >
-      <Icon className="size-4" />
+      <Icon className="size-4" strokeWidth={1.75} />
     </button>
   );
 }
@@ -45,17 +48,13 @@ export function Field({ label, hint, error, required, children, className = '' }
   return (
     <div className={className}>
       {label && (
-        <label htmlFor={id} className="mb-1.5 block text-sm font-semibold text-slate-700">
+        <label htmlFor={id} className="mb-1.5 block text-sm font-medium text-ink-soft">
           {label}
-          {required && <span className="text-red-500"> *</span>}
+          {required && <span className="text-copper"> *</span>}
         </label>
       )}
       {typeof children === 'function' ? children(id) : children}
-      {error ? (
-        <p className="mt-1 text-sm text-red-600">{error}</p>
-      ) : (
-        hint && <p className="mt-1 text-xs text-slate-500">{hint}</p>
-      )}
+      {error ? <p className="mt-1.5 text-sm text-copper">{error}</p> : hint && <p className="mt-1.5 text-xs leading-6 text-mute">{hint}</p>}
     </div>
   );
 }
@@ -77,10 +76,10 @@ export function PasswordInput({ id, value, onChange, autoComplete = 'current-pas
       <button
         type="button"
         onClick={() => setVisible((v) => !v)}
-        className="absolute inset-y-0 end-0 flex w-11 items-center justify-center text-slate-400 hover:text-slate-600"
+        className="absolute inset-y-0 end-0 flex w-11 items-center justify-center text-mute transition-colors hover:text-ink"
         aria-label={visible ? 'إخفاء كلمة المرور' : 'إظهار كلمة المرور'}
       >
-        {visible ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
+        {visible ? <EyeOff className="size-4" strokeWidth={1.75} /> : <Eye className="size-4" strokeWidth={1.75} />}
       </button>
     </div>
   );
@@ -88,28 +87,80 @@ export function PasswordInput({ id, value, onChange, autoComplete = 'current-pas
 
 export function Alert({ tone = 'error', children, className = '' }) {
   const tones = {
-    error: 'bg-red-50 text-red-800 border-red-200',
-    success: 'bg-emerald-50 text-emerald-800 border-emerald-200',
-    info: 'bg-indigo-50 text-indigo-900 border-indigo-200',
-    warning: 'bg-amber-50 text-amber-900 border-amber-200',
+    error: 'bg-copper-soft text-copper',
+    success: 'bg-acc-soft text-acc',
+    info: 'bg-mist text-ink-soft',
+    warning: 'bg-amber-soft text-amber',
   };
   const Icon = tone === 'success' ? CircleCheck : CircleAlert;
   return (
-    <div role={tone === 'error' ? 'alert' : 'status'} className={`flex gap-2 rounded-xl border p-3 text-sm ${tones[tone]} ${className}`}>
-      <Icon className="mt-0.5 size-4 shrink-0" />
+    <div role={tone === 'error' ? 'alert' : 'status'} className={`fade flex gap-2.5 rounded-lg p-3.5 text-sm leading-7 ${tones[tone]} ${className}`}>
+      <Icon className="mt-1.5 size-4 shrink-0" strokeWidth={1.75} />
       <div className="min-w-0 flex-1">{children}</div>
     </div>
   );
 }
 
-export function Spinner({ className = 'size-6' }) {
-  return <LoaderCircle className={`animate-spin text-indigo-600 ${className}`} />;
+export function Tag({ tone = 'grey', children, className = '' }) {
+  const tones = {
+    grey: 'bg-mist text-ink-soft',
+    acc: 'bg-acc-soft text-acc',
+    amber: 'bg-amber-soft text-amber',
+    copper: 'bg-copper-soft text-copper',
+  };
+  return <span className={`inline-flex items-center whitespace-nowrap rounded-full px-2.5 py-0.5 text-xs font-medium ${tones[tone]} ${className}`}>{children}</span>;
 }
 
-export function FullScreenLoader({ label = 'جاري التحميل...' }) {
+export function Card({ as: Tag = 'div', className = '', children, ...props }) {
   return (
-    <div className="flex min-h-dvh flex-col items-center justify-center gap-3 text-slate-500">
-      <Spinner className="size-8" />
+    <Tag className={`rounded-xl border border-line bg-card ${className}`} {...props}>
+      {children}
+    </Tag>
+  );
+}
+
+export function PageHeader({ title, subtitle, action }) {
+  return (
+    <div className="mb-8 flex flex-wrap items-end justify-between gap-4">
+      <div>
+        <h2 className="text-2xl font-bold text-ink sm:text-3xl">{title}</h2>
+        {subtitle && <p className="mt-1.5 text-sm text-mute">{subtitle}</p>}
+      </div>
+      {action}
+    </div>
+  );
+}
+
+// إفصاح تدريجي: يُظهر المحتوى عند الحاجة فقط
+export function Disclosure({ title, hint, defaultOpen = false, children, className = '' }) {
+  const [open, setOpen] = useState(defaultOpen);
+  return (
+    <Card className={className}>
+      <button
+        type="button"
+        aria-expanded={open}
+        onClick={() => setOpen((v) => !v)}
+        className="flex w-full items-center justify-between gap-3 px-5 py-4 text-right"
+      >
+        <span>
+          <span className="block font-semibold text-ink">{title}</span>
+          {hint && <span className="mt-0.5 block text-sm text-mute">{hint}</span>}
+        </span>
+        <ChevronDown className={`size-4 shrink-0 text-mute transition-transform duration-300 ${open ? 'rotate-180' : ''}`} strokeWidth={1.75} />
+      </button>
+      {open && <div className="fade border-t border-line px-5 py-5">{children}</div>}
+    </Card>
+  );
+}
+
+export function Spinner({ className = 'size-6' }) {
+  return <LoaderCircle className={`animate-spin text-acc ${className}`} strokeWidth={1.75} />;
+}
+
+export function FullScreenLoader({ label = 'جاري التحميل…' }) {
+  return (
+    <div className="flex min-h-dvh flex-col items-center justify-center gap-3 text-sm text-mute">
+      <Spinner className="size-6" />
       <p>{label}</p>
     </div>
   );
@@ -129,22 +180,27 @@ export function Modal({ open, title, onClose, children, footer, wide = false }) 
   }, [open, onClose]);
 
   if (!open) return null;
-  return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center bg-slate-900/50 sm:items-center sm:p-4" onMouseDown={(e) => e.target === e.currentTarget && onClose?.()}>
+  // تُرسم النافذة في جسم الصفحة مباشرة حتى لا تحصرها أي حاوية متحركة
+  return createPortal(
+    <div
+      className="fixed inset-0 z-50 flex items-end justify-center bg-ink/25 sm:items-center sm:p-6"
+      onMouseDown={(e) => e.target === e.currentTarget && onClose?.()}
+    >
       <div
         role="dialog"
         aria-modal="true"
         aria-label={title}
-        className={`flex max-h-[92dvh] w-full flex-col rounded-t-3xl bg-white shadow-2xl sm:rounded-3xl ${wide ? 'sm:max-w-2xl' : 'sm:max-w-md'}`}
+        className={`fade flex max-h-[92dvh] w-full flex-col overflow-hidden rounded-t-2xl bg-paper sm:rounded-2xl ${wide ? 'sm:max-w-2xl' : 'sm:max-w-md'}`}
       >
-        <div className="flex items-center justify-between gap-3 border-b border-slate-100 px-5 py-4">
-          <h2 className="text-lg font-bold text-slate-800">{title}</h2>
-          {onClose && <IconButton icon={X} label="إغلاق" onClick={onClose} className="text-slate-500 hover:bg-slate-100" />}
+        <div className="flex items-center justify-between gap-3 border-b border-line px-6 py-4">
+          <h2 className="text-lg font-bold text-ink">{title}</h2>
+          {onClose && <IconButton icon={X} label="إغلاق" onClick={onClose} className="text-mute hover:bg-mist hover:text-ink" />}
         </div>
-        <div className="overflow-y-auto px-5 py-4">{children}</div>
-        {footer && <div className="flex flex-wrap gap-2 border-t border-slate-100 px-5 py-4 pb-[max(1rem,env(safe-area-inset-bottom))]">{footer}</div>}
+        <div className="overflow-y-auto px-6 py-5">{children}</div>
+        {footer && <div className="flex flex-wrap gap-2 border-t border-line px-6 py-4 pb-[max(1rem,env(safe-area-inset-bottom))]">{footer}</div>}
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }
 
@@ -153,11 +209,12 @@ export function CopyButton({ text, label = 'نسخ', copiedLabel = 'تم الن�
   const timer = useRef();
   useEffect(() => () => clearTimeout(timer.current), []);
   const copy = async () => {
+    const value = typeof text === 'function' ? text() : text;
     try {
-      await navigator.clipboard.writeText(typeof text === 'function' ? text() : text);
+      await navigator.clipboard.writeText(value);
     } catch {
       const area = document.createElement('textarea');
-      area.value = typeof text === 'function' ? text() : text;
+      area.value = value;
       area.setAttribute('readonly', '');
       area.style.position = 'fixed';
       area.style.opacity = '0';
@@ -191,14 +248,14 @@ export function ToastProvider({ children }) {
   return (
     <ToastContext.Provider value={show}>
       {children}
-      <div className="pointer-events-none fixed inset-x-0 bottom-16 z-[60] flex flex-col items-center gap-2 p-4 pb-[max(1rem,env(safe-area-inset-bottom))] sm:bottom-0">
+      <div className="pointer-events-none fixed inset-x-0 bottom-20 z-[60] flex flex-col items-center gap-2 px-4 pb-[env(safe-area-inset-bottom)] sm:bottom-6">
         {toasts.map((t) => (
           <div
             key={t.id}
             role="status"
-            className={`pointer-events-auto flex max-w-md items-center gap-2 rounded-2xl px-4 py-3 text-sm font-semibold text-white shadow-lg ${t.tone === 'error' ? 'bg-red-600' : 'bg-slate-800'}`}
+            className={`fade pointer-events-auto flex max-w-md items-center gap-2 rounded-lg px-4 py-2.5 text-sm ${t.tone === 'error' ? 'bg-copper text-paper' : 'bg-ink text-paper'}`}
           >
-            {t.tone === 'error' ? <CircleAlert className="size-4 shrink-0" /> : <CircleCheck className="size-4 shrink-0 text-emerald-300" />}
+            {t.tone === 'error' ? <CircleAlert className="size-4 shrink-0" strokeWidth={1.75} /> : <CircleCheck className="size-4 shrink-0 opacity-80" strokeWidth={1.75} />}
             {t.message}
           </div>
         ))}
@@ -213,10 +270,7 @@ export const useConfirm = () => useContext(ConfirmContext);
 
 export function ConfirmProvider({ children }) {
   const [state, setState] = useState(null);
-  const confirm = useCallback(
-    (options) => new Promise((resolve) => setState({ ...options, resolve })),
-    [],
-  );
+  const confirm = useCallback((options) => new Promise((resolve) => setState({ ...options, resolve })), []);
   const close = (result) => {
     state?.resolve(result);
     setState(null);
@@ -239,7 +293,7 @@ export function ConfirmProvider({ children }) {
           </>
         }
       >
-        <p className="text-slate-600">{state?.message}</p>
+        <p className="leading-8 text-ink-soft">{state?.message}</p>
       </Modal>
     </ConfirmContext.Provider>
   );

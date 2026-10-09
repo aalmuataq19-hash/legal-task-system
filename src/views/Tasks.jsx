@@ -1,17 +1,16 @@
 import { useMemo, useState } from 'react';
-import { Briefcase, Inbox, Pencil, Plus, Search, Trash2, UserRound } from 'lucide-react';
-import { arabicError, normalizeArabic, taskUrgency } from '../lib/format.js';
-import { Button, IconButton, inputClass, useConfirm, useToast } from '../ui.jsx';
-import { DueDate, StatusSelect, TaskFormModal, URGENCY_STYLES } from './taskParts.jsx';
+import { Briefcase, ChevronDown, Inbox, Pencil, Plus, Search, Trash2, UserRound } from 'lucide-react';
+import { arabicError, formatDate, normalizeArabic, num, taskUrgency } from '../lib/format.js';
+import { Button, PageHeader, inputClass, useConfirm, useToast } from '../ui.jsx';
+import { DueDate, DueLine, StatusSelect, TaskFormModal, URGENCY, UrgencyTag } from './taskParts.jsx';
 
 export const STATUS_FILTERS = [
-  { id: 'open', label: 'غير المنجزة' },
-  { id: 'all', label: 'كل المهام' },
+  { id: 'open', label: 'المفتوحة' },
   { id: 'overdue', label: 'المتأخرة' },
-  { id: 'soon', label: 'تنتهي خلال 24 ساعة' },
-  { id: 'pending', label: 'قيد الانتظار' },
+  { id: 'soon', label: 'خلال ٢٤ ساعة' },
   { id: 'in_progress', label: 'قيد التنفيذ' },
   { id: 'completed', label: 'المنجزة' },
+  { id: 'all', label: 'الكل' },
 ];
 
 function matchesStatus(task, filter) {
@@ -28,6 +27,80 @@ function matchesStatus(task, filter) {
     default:
       return task.status === filter;
   }
+}
+
+function TaskItem({ task, assigneeName, isAdmin, canChangeStatus, supabase, onChanged, onEdit, onDelete }) {
+  const [open, setOpen] = useState(false);
+  const urgency = URGENCY[taskUrgency(task)];
+  const done = task.status === 'completed';
+  return (
+    <article className={`rounded-xl border border-line border-s-2 bg-card transition-shadow duration-300 hover:shadow-[0_2px_10px_rgba(26,26,26,0.04)] ${urgency.rule}`}>
+      <div className="flex items-start gap-4 p-5">
+        <div className="min-w-0 flex-1">
+          <div className="flex flex-wrap items-center gap-2">
+            <h3 className={`font-semibold ${done ? 'text-ink-soft' : 'text-ink'}`}>{task.client_name}</h3>
+            <UrgencyTag task={task} />
+          </div>
+          <p className={`mt-1 leading-8 ${open ? 'whitespace-pre-line' : 'line-clamp-2'} ${done ? 'text-mute' : 'text-ink-soft'}`}>{task.description}</p>
+          <div className="mt-2 flex flex-wrap items-center gap-x-5 gap-y-1 text-sm text-mute">
+            <DueLine task={task} />
+            {isAdmin && (
+              <span className="inline-flex items-center gap-1.5">
+                <UserRound className="size-3.5" strokeWidth={1.75} />
+                {assigneeName || '—'}
+              </span>
+            )}
+            {task.case_type && (
+              <span className="inline-flex items-center gap-1.5">
+                <Briefcase className="size-3.5" strokeWidth={1.75} />
+                {task.case_type}
+              </span>
+            )}
+          </div>
+        </div>
+        <StatusSelect task={task} supabase={supabase} onChanged={onChanged} disabled={!canChangeStatus} />
+      </div>
+
+      <button
+        type="button"
+        aria-expanded={open}
+        onClick={() => setOpen((v) => !v)}
+        className="flex w-full items-center justify-center gap-1.5 border-t border-line py-2 text-xs text-mute transition-colors hover:text-ink"
+      >
+        {open ? 'إخفاء التفاصيل' : 'التفاصيل'}
+        <ChevronDown className={`size-3.5 transition-transform duration-300 ${open ? 'rotate-180' : ''}`} strokeWidth={1.75} />
+      </button>
+
+      {open && (
+        <div className="fade space-y-5 border-t border-line px-5 py-5 text-sm">
+          <div>
+            <p className="mb-1 text-xs text-mute">موعد الانتهاء</p>
+            <DueDate task={task} />
+          </div>
+          {task.notes && (
+            <div className="rounded-lg bg-paper p-3.5">
+              <p className="mb-1 text-xs text-mute">ملاحظات</p>
+              <p className="whitespace-pre-line leading-8 text-ink-soft">{task.notes}</p>
+            </div>
+          )}
+          <p className="text-xs text-mute">
+            أُضيفت في {formatDate(task.created_at)}
+            {task.completed_at && <> · أُنجزت في {formatDate(task.completed_at)}</>}
+          </p>
+          {isAdmin && (
+            <div className="flex flex-wrap gap-2">
+              <Button variant="outline" icon={Pencil} onClick={onEdit}>
+                تعديل
+              </Button>
+              <Button variant="dangerQuiet" icon={Trash2} onClick={onDelete}>
+                حذف
+              </Button>
+            </div>
+          )}
+        </div>
+      )}
+    </article>
+  );
 }
 
 export default function Tasks({ supabase, member, isAdmin, tasks, members, refresh, initialFilter }) {
@@ -62,7 +135,7 @@ export default function Tasks({ supabase, member, isAdmin, tasks, members, refre
   const remove = async (task) => {
     const ok = await confirm({
       title: 'حذف المهمة',
-      message: `هل تريد حذف مهمة "${task.client_name}" نهائياً؟ لا يمكن التراجع عن الحذف.`,
+      message: `هل تريد حذف مهمة «${task.client_name}» نهائياً؟ لا يمكن التراجع عن الحذف.`,
       confirmLabel: 'حذف',
       danger: true,
     });
@@ -73,40 +146,34 @@ export default function Tasks({ supabase, member, isAdmin, tasks, members, refre
     toast('تم حذف المهمة');
   };
 
-  const canChangeStatus = (task) => isAdmin || task.assigned_to === member.id;
-
   return (
-    <div className="space-y-4">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <h2 className="text-xl font-extrabold text-slate-800">{isAdmin ? 'المهام' : 'مهامي'}</h2>
-        {isAdmin && (
-          <Button icon={Plus} onClick={() => setEditing(null)}>
-            مهمة جديدة
-          </Button>
-        )}
-      </div>
+    <div>
+      <PageHeader
+        title={isAdmin ? 'المهام' : 'مهامي'}
+        subtitle={tasks.length ? `يُعرض ${num(visible.length)} من أصل ${num(tasks.length)}` : 'لا توجد مهام بعد'}
+        action={
+          isAdmin && (
+            <Button icon={Plus} onClick={() => setEditing(null)}>
+              مهمة جديدة
+            </Button>
+          )
+        }
+      />
 
-      <div className="grid grid-cols-1 gap-3 rounded-2xl border border-slate-200 bg-white p-3 sm:grid-cols-2 lg:grid-cols-4">
-        <div className="relative sm:col-span-2">
-          <Search className="pointer-events-none absolute inset-y-0 start-3 my-auto size-4 text-slate-400" />
+      <div className="mb-4 flex flex-col gap-3 sm:flex-row">
+        <div className="relative flex-1">
+          <Search className="pointer-events-none absolute inset-y-0 start-3.5 my-auto size-4 text-mute" strokeWidth={1.75} />
           <input
             type="search"
             aria-label="بحث"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="ابحث باسم العميل أو بيان المهمة..."
-            className={`${inputClass} ps-9`}
+            placeholder="ابحث باسم العميل أو بيان المهمة…"
+            className={`${inputClass} ps-10`}
           />
         </div>
-        <select aria-label="تصفية حسب الحالة" value={status} onChange={(e) => setStatus(e.target.value)} className={inputClass}>
-          {STATUS_FILTERS.map((f) => (
-            <option key={f.id} value={f.id}>
-              {f.label}
-            </option>
-          ))}
-        </select>
         {isAdmin && (
-          <select aria-label="تصفية حسب الموظف" value={assignee} onChange={(e) => setAssignee(e.target.value)} className={inputClass}>
+          <select aria-label="تصفية حسب الموظف" value={assignee} onChange={(e) => setAssignee(e.target.value)} className={`${inputClass} sm:w-56`}>
             <option value="">كل الموظفين</option>
             {members.map((m) => (
               <option key={m.id} value={m.id}>
@@ -117,12 +184,28 @@ export default function Tasks({ supabase, member, isAdmin, tasks, members, refre
         )}
       </div>
 
-      <p className="text-sm text-slate-500">عدد النتائج: {visible.length}</p>
+      <div role="radiogroup" aria-label="تصفية حسب الحالة" className="no-scrollbar -mx-5 mb-8 flex gap-2 overflow-x-auto px-5 sm:mx-0 sm:flex-wrap sm:px-0">
+        {STATUS_FILTERS.map((f) => {
+          const active = status === f.id;
+          return (
+            <button
+              key={f.id}
+              type="button"
+              role="radio"
+              aria-checked={active}
+              onClick={() => setStatus(f.id)}
+              className={`shrink-0 rounded-full border px-4 py-1.5 text-sm transition-colors duration-200 ${active ? 'border-acc bg-acc text-paper' : 'border-line bg-card text-ink-soft hover:border-line-strong'}`}
+            >
+              {f.label}
+            </button>
+          );
+        })}
+      </div>
 
       {visible.length === 0 ? (
-        <div className="flex flex-col items-center gap-3 rounded-2xl border border-dashed border-slate-300 bg-white py-14 text-center text-slate-500">
-          <Inbox className="size-10 text-slate-300" />
-          <p>{tasks.length === 0 ? 'لا توجد مهام بعد' : 'لا توجد مهام مطابقة للبحث أو التصفية'}</p>
+        <div className="flex flex-col items-center gap-4 rounded-xl border border-dashed border-line-strong py-16 text-center">
+          <Inbox className="size-8 text-line-strong" strokeWidth={1.5} />
+          <p className="text-mute">{tasks.length === 0 ? 'لا توجد مهام بعد' : 'لا توجد مهام مطابقة للبحث أو التصفية'}</p>
           {isAdmin && tasks.length === 0 && (
             <Button icon={Plus} onClick={() => setEditing(null)}>
               إضافة أول مهمة
@@ -130,99 +213,21 @@ export default function Tasks({ supabase, member, isAdmin, tasks, members, refre
           )}
         </div>
       ) : (
-        <>
-          {/* الجوال: بطاقات */}
-          <div className="space-y-3 md:hidden">
-            {visible.map((task) => {
-              const style = URGENCY_STYLES[taskUrgency(task)];
-              return (
-                <article key={task.id} className={`rounded-2xl border border-s-4 border-slate-200 p-4 shadow-sm ${style.row} ${style.border}`}>
-                  <div className="mb-2 flex items-start justify-between gap-2">
-                    <div className="min-w-0">
-                      <h3 className="font-bold text-slate-800">{task.client_name}</h3>
-                      {task.case_type && <p className="text-xs font-semibold text-indigo-700">{task.case_type}</p>}
-                    </div>
-                    <StatusSelect task={task} supabase={supabase} onChanged={refresh} disabled={!canChangeStatus(task)} />
-                  </div>
-                  <p className="whitespace-pre-line text-sm text-slate-700">{task.description}</p>
-                  {task.notes && <p className="mt-1 whitespace-pre-line text-sm text-slate-500">ملاحظة: {task.notes}</p>}
-                  <div className="mt-3 flex flex-wrap items-end justify-between gap-3 border-t border-slate-200/70 pt-3 text-sm">
-                    <DueDate task={task} compact />
-                    {isAdmin && (
-                      <div className="flex items-center gap-1 text-slate-600">
-                        <UserRound className="size-4 text-slate-400" />
-                        {memberName[task.assigned_to] || '—'}
-                      </div>
-                    )}
-                  </div>
-                  {isAdmin && (
-                    <div className="mt-3 flex gap-2">
-                      <Button variant="secondary" icon={Pencil} onClick={() => setEditing(task)} className="flex-1">
-                        تعديل
-                      </Button>
-                      <Button variant="secondary" icon={Trash2} onClick={() => remove(task)} className="flex-1 text-red-600">
-                        حذف
-                      </Button>
-                    </div>
-                  )}
-                </article>
-              );
-            })}
-          </div>
-
-          {/* الشاشات الكبيرة: جدول */}
-          <div className="hidden overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm md:block">
-            <table className="w-full text-right text-sm">
-              <thead className="bg-slate-100 text-slate-600">
-                <tr>
-                  <th className="px-4 py-3 font-bold">العميل</th>
-                  <th className="px-4 py-3 font-bold">بيان المهمة</th>
-                  {isAdmin && <th className="px-4 py-3 font-bold">المكلف</th>}
-                  <th className="px-4 py-3 font-bold">موعد الانتهاء</th>
-                  <th className="px-4 py-3 font-bold">الحالة</th>
-                  {isAdmin && <th className="px-4 py-3 font-bold">إجراءات</th>}
-                </tr>
-              </thead>
-              <tbody>
-                {visible.map((task) => {
-                  const style = URGENCY_STYLES[taskUrgency(task)];
-                  return (
-                    <tr key={task.id} className={`border-t border-slate-100 align-top ${style.row}`}>
-                      <td className={`border-s-4 px-4 py-3 ${style.border}`}>
-                        <div className="font-bold text-slate-800">{task.client_name}</div>
-                        {task.case_type && (
-                          <div className="mt-1 inline-flex items-center gap-1 rounded-md bg-indigo-50 px-2 py-0.5 text-xs font-semibold text-indigo-700">
-                            <Briefcase className="size-3" />
-                            {task.case_type}
-                          </div>
-                        )}
-                      </td>
-                      <td className="max-w-md px-4 py-3">
-                        <div className="whitespace-pre-line text-slate-700">{task.description}</div>
-                        {task.notes && <div className="mt-1 whitespace-pre-line text-xs text-slate-500">ملاحظة: {task.notes}</div>}
-                      </td>
-                      {isAdmin && <td className="px-4 py-3 text-slate-700">{memberName[task.assigned_to] || '—'}</td>}
-                      <td className="px-4 py-3">
-                        <DueDate task={task} />
-                      </td>
-                      <td className="px-4 py-3">
-                        <StatusSelect task={task} supabase={supabase} onChanged={refresh} disabled={!canChangeStatus(task)} />
-                      </td>
-                      {isAdmin && (
-                        <td className="px-4 py-3">
-                          <div className="flex gap-1">
-                            <IconButton icon={Pencil} label="تعديل" onClick={() => setEditing(task)} className="text-indigo-700 hover:bg-indigo-50" />
-                            <IconButton icon={Trash2} label="حذف" onClick={() => remove(task)} className="text-red-600 hover:bg-red-50" />
-                          </div>
-                        </td>
-                      )}
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-        </>
+        <div className="space-y-3">
+          {visible.map((task) => (
+            <TaskItem
+              key={task.id}
+              task={task}
+              assigneeName={memberName[task.assigned_to]}
+              isAdmin={isAdmin}
+              canChangeStatus={isAdmin || task.assigned_to === member.id}
+              supabase={supabase}
+              onChanged={refresh}
+              onEdit={() => setEditing(task)}
+              onDelete={() => remove(task)}
+            />
+          ))}
+        </div>
       )}
 
       {editing !== undefined && (

@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
-import { KeyRound, Pencil, RefreshCw, Save, Trash2, UserPlus } from 'lucide-react';
-import { ROLE_LABELS, arabicError, generatePassword, taskUrgency } from '../lib/format.js';
-import { Alert, Button, CopyButton, Field, Modal, inputClass, useConfirm, useToast } from '../ui.jsx';
+import { ChevronDown, KeyRound, Pencil, RefreshCw, Save, Trash2, UserPlus } from 'lucide-react';
+import { ROLE_LABELS, arabicError, generatePassword, num, taskUrgency } from '../lib/format.js';
+import { Alert, Button, Card, CopyButton, Field, Modal, PageHeader, Tag, inputClass, useConfirm, useToast } from '../ui.jsx';
 
 const loginLink = () => `${window.location.origin}${window.location.pathname}`;
 
@@ -21,8 +21,8 @@ function CredentialsModal({ data, onClose }) {
   const text = credentialsText(data);
   return (
     <Modal open title={data.reset ? 'تمت إعادة تعيين كلمة المرور' : 'تم إنشاء الحساب'} onClose={onClose} footer={<CopyButton text={text} label="نسخ الرسالة" variant="primary" className="flex-1" />}>
-      <p className="mb-3 text-sm text-slate-600">أرسل هذه البيانات للموظف (واتساب أو بريد). لن تظهر كلمة المرور مرة أخرى.</p>
-      <pre className="whitespace-pre-wrap rounded-xl bg-slate-100 p-4 text-sm leading-7 text-slate-800">{text}</pre>
+      <p className="mb-4 text-sm leading-7 text-ink-soft">أرسل هذه البيانات للموظف (واتساب أو بريد). لن تظهر كلمة المرور مرة أخرى.</p>
+      <pre className="whitespace-pre-wrap rounded-lg border border-line bg-card p-4 font-sans text-sm leading-8 text-ink">{text}</pre>
     </Modal>
   );
 }
@@ -100,10 +100,10 @@ function MemberFormModal({ supabase, member, self, onClose, onSaved }) {
           )}
         </Field>
         {editing ? (
-          <label className={`flex items-center gap-2 text-sm ${isSelf ? 'text-slate-400' : 'text-slate-700'}`}>
+          <label className={`flex items-center gap-2.5 text-sm leading-7 ${isSelf ? 'text-mute' : 'text-ink-soft'}`}>
             <input
               type="checkbox"
-              className="size-4 accent-indigo-700"
+              className="size-4 accent-acc"
               checked={form.active}
               disabled={isSelf}
               onChange={(e) => setForm((f) => ({ ...f, active: e.target.checked }))}
@@ -151,11 +151,66 @@ function ResetPasswordModal({ supabase, member, onClose, onDone }) {
       }
     >
       <div className="space-y-4">
-        <p className="text-sm text-slate-600">سيتم تسجيل خروج الموظف من جميع أجهزته، وسيُطلب منه تغيير كلمة المرور عند الدخول.</p>
+        <p className="text-sm leading-7 text-ink-soft">سيتم تسجيل خروج الموظف من جميع أجهزته، وسيُطلب منه تغيير كلمة المرور عند الدخول.</p>
         <Field label="كلمة المرور المؤقتة الجديدة">{(id) => <PasswordWithGenerator id={id} value={password} onChange={setPassword} />}</Field>
         {error && <Alert>{error}</Alert>}
       </div>
     </Modal>
+  );
+}
+
+function MemberRow({ m, self, stats, onEdit, onReset, onDelete }) {
+  const [open, setOpen] = useState(false);
+  const isSelf = m.id === self.id;
+  return (
+    <article className={`px-5 py-5 ${m.active ? '' : 'bg-paper/60'}`}>
+      <div className="flex items-start gap-4">
+        <div className={`flex size-11 shrink-0 items-center justify-center rounded-full text-base font-semibold ${m.active ? 'bg-acc-soft text-acc' : 'bg-mist text-mute'}`}>
+          {m.name.trim().charAt(0)}
+        </div>
+        <div className="min-w-0 flex-1">
+          <div className="flex flex-wrap items-center gap-2">
+            <h3 className={`font-semibold ${m.active ? 'text-ink' : 'text-mute'}`}>{m.name}</h3>
+            {isSelf && <span className="text-xs text-mute">(أنت)</span>}
+            {m.role === 'admin' && <Tag tone="acc">{ROLE_LABELS.admin}</Tag>}
+            {!m.active && <Tag tone="copper">معطّل</Tag>}
+            {m.active && m.must_change_password && <Tag>لم يسجّل دخوله بعد</Tag>}
+          </div>
+          <p className="ltr mt-0.5 truncate text-right text-sm text-mute">{m.email}</p>
+          <p className="mt-2 text-sm text-ink-soft">
+            {num(stats.open)} مفتوحة
+            {stats.overdue > 0 && <span className="text-copper"> · {num(stats.overdue)} متأخرة</span>}
+            <span className="text-mute"> · {num(stats.completed)} منجزة</span>
+          </p>
+        </div>
+        <button
+          type="button"
+          aria-expanded={open}
+          onClick={() => setOpen((v) => !v)}
+          className="inline-flex shrink-0 items-center gap-1 rounded-lg border border-line px-3 py-1.5 text-sm text-ink-soft transition-colors hover:bg-paper"
+        >
+          إدارة
+          <ChevronDown className={`size-3.5 transition-transform duration-300 ${open ? 'rotate-180' : ''}`} strokeWidth={1.75} />
+        </button>
+      </div>
+      {open && (
+        <div className="fade mt-4 flex flex-wrap gap-2 ps-15">
+          <Button variant="outline" icon={Pencil} onClick={onEdit}>
+            تعديل
+          </Button>
+          {!isSelf && (
+            <>
+              <Button variant="secondary" icon={KeyRound} onClick={onReset}>
+                كلمة المرور
+              </Button>
+              <Button variant="dangerQuiet" icon={Trash2} onClick={onDelete}>
+                حذف
+              </Button>
+            </>
+          )}
+        </div>
+      )}
+    </article>
   );
 }
 
@@ -195,68 +250,30 @@ export default function Employees({ supabase, member: self, tasks, members, refr
   };
 
   return (
-    <div className="space-y-4">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <h2 className="text-xl font-extrabold text-slate-800">الموظفون</h2>
-        <Button icon={UserPlus} onClick={() => setEditing(null)}>
-          إضافة موظف
-        </Button>
-      </div>
+    <div>
+      <PageHeader
+        title="الموظفون"
+        subtitle={`${num(members.filter((m) => m.active).length)} حساب مفعّل`}
+        action={
+          <Button icon={UserPlus} onClick={() => setEditing(null)}>
+            إضافة موظف
+          </Button>
+        }
+      />
 
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
-        {sorted.map((m) => {
-          const s = stats[m.id] || { total: 0, open: 0, overdue: 0, completed: 0 };
-          return (
-            <article key={m.id} className={`rounded-2xl border border-slate-200 bg-white p-4 shadow-sm ${m.active ? '' : 'opacity-70'}`}>
-              <div className="flex items-start gap-3">
-                <div className="flex size-12 shrink-0 items-center justify-center rounded-full bg-indigo-100 text-lg font-extrabold text-indigo-700">
-                  {m.name.trim().charAt(0)}
-                </div>
-                <div className="min-w-0 flex-1">
-                  <h3 className="truncate font-bold text-slate-800">
-                    {m.name} {m.id === self.id && <span className="text-xs font-normal text-slate-500">(أنت)</span>}
-                  </h3>
-                  <p className="ltr truncate text-right text-sm text-slate-500">{m.email}</p>
-                  <div className="mt-1 flex flex-wrap gap-1 text-xs font-bold">
-                    <span className={`rounded-md px-2 py-0.5 ${m.role === 'admin' ? 'bg-amber-100 text-amber-800' : 'bg-slate-100 text-slate-600'}`}>{ROLE_LABELS[m.role]}</span>
-                    {!m.active && <span className="rounded-md bg-red-100 px-2 py-0.5 text-red-700">معطّل</span>}
-                    {m.active && m.must_change_password && <span className="rounded-md bg-sky-100 px-2 py-0.5 text-sky-700">لم يسجّل دخوله بعد</span>}
-                  </div>
-                </div>
-              </div>
-              <div className="mt-4 grid grid-cols-3 gap-2 border-t border-slate-100 pt-3 text-center">
-                <div>
-                  <p className="text-xl font-extrabold text-indigo-700">{s.open}</p>
-                  <p className="text-xs text-slate-500">مفتوحة</p>
-                </div>
-                <div>
-                  <p className="text-xl font-extrabold text-red-600">{s.overdue}</p>
-                  <p className="text-xs text-slate-500">متأخرة</p>
-                </div>
-                <div>
-                  <p className="text-xl font-extrabold text-emerald-600">{s.completed}</p>
-                  <p className="text-xs text-slate-500">منجزة</p>
-                </div>
-              </div>
-              <div className="mt-3 flex flex-wrap gap-2">
-                <Button variant="secondary" icon={Pencil} onClick={() => setEditing(m)} className="flex-1">
-                  تعديل
-                </Button>
-                {m.id !== self.id && (
-                  <>
-                    <Button variant="secondary" icon={KeyRound} onClick={() => setResetting(m)} className="flex-1">
-                      كلمة المرور
-                    </Button>
-                    <Button variant="secondary" icon={Trash2} onClick={() => remove(m)} className="text-red-600" aria-label="حذف">
-                      <span className="sr-only">حذف</span>
-                    </Button>
-                  </>
-                )}
-              </div>
-            </article>
-          );
-        })}
-      </div>
+      <Card className="divide-y divide-line">
+        {sorted.map((m) => (
+          <MemberRow
+            key={m.id}
+            m={m}
+            self={self}
+            stats={stats[m.id] || { open: 0, overdue: 0, completed: 0 }}
+            onEdit={() => setEditing(m)}
+            onReset={() => setResetting(m)}
+            onDelete={() => remove(m)}
+          />
+        ))}
+      </Card>
 
       {editing !== undefined && (
         <MemberFormModal

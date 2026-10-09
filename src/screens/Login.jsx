@@ -26,7 +26,7 @@ export default function Login({ supabase, settings }) {
   };
 
   return (
-    <AuthShell settings={settings} subtitle="سجّل دخولك للمتابعة" title="تسجيل الدخول">
+    <AuthShell settings={settings} title="تسجيل الدخول">
       <form onSubmit={submit} className="space-y-4" noValidate>
         <Field label="البريد الإلكتروني">
           {(id) => (
@@ -46,20 +46,20 @@ export default function Login({ supabase, settings }) {
         <Field label="كلمة المرور">
           {(id) => <PasswordInput id={id} value={password} onChange={(e) => setPassword(e.target.value)} required />}
         </Field>
-        <label className="flex cursor-pointer items-center gap-2 text-sm text-slate-700">
+        <label className="flex cursor-pointer items-center gap-2.5 text-sm text-ink-soft">
           <input
             type="checkbox"
             checked={remember}
             onChange={(e) => setRememberState(e.target.checked)}
-            className="size-4 rounded border-slate-300 accent-indigo-700"
+            className="size-4 rounded border-line accent-acc"
           />
           تذكرني على هذا الجهاز
         </label>
         {error && <Alert>{error}</Alert>}
-        <Button type="submit" icon={LogIn} loading={loading} disabled={!email || !password} className="w-full py-3 text-base">
+        <Button type="submit" icon={LogIn} loading={loading} disabled={!email || !password} className="w-full py-3">
           دخول
         </Button>
-        <p className="text-center text-xs text-slate-500">نسيت كلمة المرور؟ تواصل مع مدير المكتب لإعادة تعيينها.</p>
+        <p className="pt-2 text-center text-xs leading-6 text-mute">نسيت كلمة المرور؟ تواصل مع مدير المكتب لإعادة تعيينها.</p>
       </form>
     </AuthShell>
   );

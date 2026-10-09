@@ -1,16 +1,43 @@
 @import "tailwindcss";
 
+/* هوية بصرية مستوحاة من «مِداد»: عاجي دافئ، فحمي، رمادي دافئ، ولون تفاعلي واحد زمردي */
 @theme {
-  --font-sans: "Cairo", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Tahoma, sans-serif;
+  --font-sans: "IBM Plex Sans Arabic", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Tahoma, sans-serif;
+
+  --color-paper: #faf9f6;
+  --color-card: #ffffff;
+  --color-ink: #1a1a1a;
+  --color-ink-soft: #45413b;
+  --color-mute: #8a8378;
+  --color-line: #e8e4dd;
+  --color-line-strong: #d8d2c7;
+  --color-mist: #f1efea;
+
+  --color-acc: #1f4d3d;
+  --color-acc-hover: #173b2f;
+  --color-acc-soft: #e9f0ed;
+
+  --color-amber: #8c6409;
+  --color-amber-soft: #fbf3df;
+  --color-copper: #a0522d;
+  --color-copper-soft: #f7ece6;
 }
 
 html {
   -webkit-text-size-adjust: 100%;
+  -webkit-tap-highlight-color: transparent;
 }
 
 body {
-  @apply bg-slate-50 text-slate-800 antialiased;
+  @apply bg-paper text-ink antialiased;
   min-height: 100dvh;
+  font-feature-settings: "kern";
+  line-height: 1.75;
+}
+
+::selection {
+  background: var(--color-acc-soft);
+  color: var(--color-acc);
 }
 
 /* حقول التاريخ تبقى من اليسار لليمين حتى تُقرأ الأرقام بشكل صحيح */
@@ -22,4 +49,37 @@ input[type="datetime-local"] {
 .ltr {
   direction: ltr;
   unicode-bidi: plaintext;
+}
+
+/* حركة هادئة جداً عند ظهور العناصر */
+@keyframes fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.fade {
+  animation: fade-in 220ms ease-out backwards;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .fade {
+    animation: none;
+  }
+  * {
+    transition-duration: 0ms !important;
+  }
+}
+
+/* شريط تمرير أفقي مخفي لصفوف الاختيار على الجوال */
+.no-scrollbar {
+  scrollbar-width: none;
+}
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
 }

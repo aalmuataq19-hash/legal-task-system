@@ -1,7 +1,7 @@
 import { useRef, useState } from 'react';
-import { Building2, ImageUp, Save, Trash2, UserRound } from 'lucide-react';
+import { Building2, ImageUp, KeyRound, Save, Trash2, UserRound } from 'lucide-react';
 import { ROLE_LABELS, arabicError } from '../lib/format.js';
-import { Alert, Button, Field, inputClass, useToast } from '../ui.jsx';
+import { Alert, Button, Card, Field, PageHeader, inputClass, useToast } from '../ui.jsx';
 import { OfficeMark } from '../screens/AuthShell.jsx';
 import { ChangePasswordForm } from '../screens/AccountScreens.jsx';
 
@@ -72,59 +72,93 @@ function OfficeSettings({ supabase, settings, onSettingsChange }) {
   };
 
   return (
-    <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-      <h3 className="mb-4 flex items-center gap-2 text-lg font-bold text-slate-800">
-        <Building2 className="size-5 text-indigo-600" /> بيانات المكتب
-      </h3>
-      <div className="space-y-4">
-        <Field label="اسم المكتب" hint="يظهر في أعلى النظام وفي صفحة الدخول">
+    <Card as="section" className="p-6 sm:p-8">
+      <SectionTitle icon={Building2} title="بيانات المكتب" hint="تظهر في أعلى النظام وفي صفحة الدخول لجميع الموظفين." />
+      <div className="space-y-6">
+        <Field label="اسم المكتب">
           {(id) => <input id={id} className={inputClass} value={name} onChange={(e) => setName(e.target.value)} placeholder="مثال: مكتب العدالة للمحاماة" maxLength={120} />}
         </Field>
         <div>
-          <p className="mb-1.5 text-sm font-semibold text-slate-700">شعار المكتب (اختياري)</p>
-          <div className="flex flex-wrap items-center gap-3">
-            <OfficeMark settings={{ logo }} className="size-20" />
+          <p className="mb-2 text-sm font-medium text-ink-soft">شعار المكتب <span className="text-mute">(اختياري)</span></p>
+          <div className="flex flex-wrap items-center gap-4">
+            <OfficeMark settings={{ logo }} size="lg" />
             <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={pick} aria-label="رفع الشعار" />
             <Button variant="secondary" icon={ImageUp} onClick={() => fileRef.current?.click()}>
               {logo ? 'تغيير الشعار' : 'رفع شعار'}
             </Button>
             {logo && (
-              <Button variant="ghost" icon={Trash2} onClick={() => setLogo(null)} className="text-red-600">
+              <Button variant="ghost" icon={Trash2} onClick={() => setLogo(null)} className="text-copper">
                 إزالة
               </Button>
             )}
           </div>
         </div>
         {error && <Alert>{error}</Alert>}
-        <Button icon={Save} loading={saving} disabled={!dirty} onClick={save}>
-          حفظ
-        </Button>
+        <div className="border-t border-line pt-6">
+          <Button icon={Save} loading={saving} disabled={!dirty} onClick={save}>
+            حفظ
+          </Button>
+        </div>
       </div>
-    </section>
+    </Card>
+  );
+}
+
+function SectionTitle({ icon: Icon, title, hint }) {
+  return (
+    <div className="mb-7 flex items-start gap-3">
+      <span className="mt-0.5 flex size-9 shrink-0 items-center justify-center rounded-lg bg-acc-soft text-acc">
+        <Icon className="size-4" strokeWidth={1.75} />
+      </span>
+      <div>
+        <h3 className="text-lg font-bold text-ink">{title}</h3>
+        {hint && <p className="mt-0.5 text-sm leading-7 text-mute">{hint}</p>}
+      </div>
+    </div>
   );
 }
 
 export default function Settings({ supabase, member, isAdmin, settings, onSettingsChange }) {
   const toast = useToast();
+  const [changing, setChanging] = useState(false);
   return (
-    <div className="mx-auto max-w-2xl space-y-6">
-      <h2 className="text-xl font-extrabold text-slate-800">الإعدادات</h2>
-      {isAdmin && <OfficeSettings supabase={supabase} settings={settings} onSettingsChange={onSettingsChange} />}
-      <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-        <h3 className="mb-4 flex items-center gap-2 text-lg font-bold text-slate-800">
-          <UserRound className="size-5 text-indigo-600" /> حسابي
-        </h3>
-        <dl className="mb-5 grid grid-cols-[auto_1fr] gap-x-4 gap-y-2 text-sm">
-          <dt className="text-slate-500">الاسم</dt>
-          <dd className="font-semibold">{member.name}</dd>
-          <dt className="text-slate-500">البريد</dt>
-          <dd className="ltr text-right font-semibold">{member.email}</dd>
-          <dt className="text-slate-500">الصلاحية</dt>
-          <dd className="font-semibold">{ROLE_LABELS[member.role]}</dd>
-        </dl>
-        <h4 className="mb-3 font-bold text-slate-700">تغيير كلمة المرور</h4>
-        <ChangePasswordForm supabase={supabase} onDone={() => toast('تم تغيير كلمة المرور')} />
-      </section>
+    <div className="mx-auto max-w-2xl">
+      <PageHeader title="الإعدادات" subtitle={isAdmin ? 'بيانات المكتب وحسابك الشخصي' : 'حسابك الشخصي'} />
+      <div className="space-y-6">
+        {isAdmin && <OfficeSettings supabase={supabase} settings={settings} onSettingsChange={onSettingsChange} />}
+        <Card as="section" className="p-6 sm:p-8">
+          <SectionTitle icon={UserRound} title="حسابي" />
+          <dl className="grid grid-cols-[auto_1fr] gap-x-8 gap-y-3 text-sm">
+            <dt className="text-mute">الاسم</dt>
+            <dd className="font-medium text-ink">{member.name}</dd>
+            <dt className="text-mute">البريد</dt>
+            <dd className="ltr text-right font-medium text-ink">{member.email}</dd>
+            <dt className="text-mute">الصلاحية</dt>
+            <dd className="font-medium text-ink">{ROLE_LABELS[member.role]}</dd>
+          </dl>
+          <div className="mt-7 border-t border-line pt-6">
+            {changing ? (
+              <div className="fade">
+                <h4 className="mb-4 font-semibold text-ink">تغيير كلمة المرور</h4>
+                <ChangePasswordForm
+                  supabase={supabase}
+                  onDone={() => {
+                    setChanging(false);
+                    toast('تم تغيير كلمة المرور');
+                  }}
+                />
+                <Button variant="ghost" onClick={() => setChanging(false)} className="mt-2 w-full">
+                  إلغاء
+                </Button>
+              </div>
+            ) : (
+              <Button variant="outline" icon={KeyRound} onClick={() => setChanging(true)}>
+                تغيير كلمة المرور
+              </Button>
+            )}
+          </div>
+        </Card>
+      </div>
     </div>
   );
 }

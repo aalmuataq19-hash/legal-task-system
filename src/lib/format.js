@@ -29,29 +29,36 @@ export function taskUrgency(task, now = Date.now()) {
   return 'normal';
 }
 
-const dateFmt = new Intl.DateTimeFormat('ar-SA-u-ca-gregory-nu-latn', {
+// الأرقام بالهندية العربية (٠١٢٣) لتتسق مع الواجهة العربية بالكامل
+const dateFmt = new Intl.DateTimeFormat('ar-SA-u-ca-gregory-nu-arab', {
   weekday: 'long',
   day: 'numeric',
   month: 'long',
   year: 'numeric',
 });
-const shortDateFmt = new Intl.DateTimeFormat('ar-SA-u-ca-gregory-nu-latn', {
-  day: 'numeric',
-  month: 'short',
-  year: 'numeric',
-});
-const timeFmt = new Intl.DateTimeFormat('ar-SA-u-nu-latn', { hour: 'numeric', minute: '2-digit' });
-const hijriFmt = new Intl.DateTimeFormat('ar-SA-u-ca-islamic-umalqura-nu-latn', {
+const shortDateFmt = new Intl.DateTimeFormat('ar-SA-u-ca-gregory-nu-arab', {
   day: 'numeric',
   month: 'long',
-  year: 'numeric',
 });
-const relFmt = new Intl.RelativeTimeFormat('ar', { numeric: 'auto' });
+const timeFmt = new Intl.DateTimeFormat('ar-SA-u-nu-arab', { hour: 'numeric', minute: '2-digit' });
+const relFmt = new Intl.RelativeTimeFormat('ar-SA-u-nu-arab', { numeric: 'auto' });
+const numFmt = new Intl.NumberFormat('ar-SA-u-nu-arab');
 
+// إذا لم يدعم المتصفح تقويم أم القرى فلا نعرض تاريخاً هجرياً خاطئاً
+const hijriFmt = (() => {
+  try {
+    const f = new Intl.DateTimeFormat('ar-SA-u-ca-islamic-umalqura-nu-arab', { day: 'numeric', month: 'long', year: 'numeric' });
+    return f.resolvedOptions().calendar === 'islamic-umalqura' ? f : null;
+  } catch {
+    return null;
+  }
+})();
+
+export const num = (n) => numFmt.format(n ?? 0);
 export const formatDate = (iso) => dateFmt.format(new Date(iso));
 export const formatShortDate = (iso) => shortDateFmt.format(new Date(iso));
 export const formatTime = (iso) => timeFmt.format(new Date(iso));
-export const formatHijri = (iso) => hijriFmt.format(new Date(iso));
+export const formatHijri = (iso) => (hijriFmt ? hijriFmt.format(new Date(iso)) : '');
 
 export function formatRelative(iso, now = Date.now()) {
   const diff = new Date(iso).getTime() - now;
@@ -60,6 +67,16 @@ export function formatRelative(iso, now = Date.now()) {
   if (abs < DAY) return relFmt.format(Math.round(diff / HOUR), 'hour');
   return relFmt.format(Math.round(diff / DAY), 'day');
 }
+
+// عدّ المهام بصيغة عربية سليمة: مهمة واحدة، مهمتان، ٣ مهام، ١١ مهمة
+export function countTasks(n, { one = 'مهمة واحدة', two = 'مهمتان', few = 'مهام', many = 'مهمة' } = {}) {
+  if (n === 1) return one;
+  if (n === 2) return two;
+  if (n >= 3 && n <= 10) return `${num(n)} ${few}`;
+  return `${num(n)} ${many}`;
+}
+
+export const greeting = (date = new Date()) => (date.getHours() < 12 ? 'صباح الخير' : 'مساء الخير');
 
 // تحويل بين قيمة حقل datetime-local (بالتوقيت المحلي) وتاريخ ISO
 export function toLocalInput(iso) {

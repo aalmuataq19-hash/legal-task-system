@@ -1,0 +1,218 @@
+import { useState } from 'react';
+import { CalendarClock, Save } from 'lucide-react';
+import {
+  CASE_TYPES,
+  STATUS_LABELS,
+  arabicError,
+  formatDate,
+  formatHijri,
+  formatRelative,
+  formatTime,
+  fromLocalInput,
+  taskUrgency,
+  toLocalInput,
+} from '../lib/format.js';
+import { Alert, Button, Field, Modal, inputClass, useToast } from '../ui.jsx';
+
+export const URGENCY_STYLES = {
+  overdue: { row: 'bg-red-50/70', border: 'border-s-red-500', badge: 'bg-red-100 text-red-700', label: 'متأخرة' },
+  soon: { row: 'bg-amber-50/70', border: 'border-s-amber-400', badge: 'bg-amber-100 text-amber-800', label: 'خلال 24 ساعة' },
+  completed: { row: 'bg-emerald-50/50', border: 'border-s-emerald-500', badge: 'bg-emerald-100 text-emerald-700', label: 'منجزة' },
+  normal: { row: 'bg-white', border: 'border-s-slate-200', badge: 'bg-slate-100 text-slate-600', label: '' },
+};
+
+export function DueDate({ task, compact = false }) {
+  const urgency = taskUrgency(task);
+  const style = URGENCY_STYLES[urgency];
+  return (
+    <div className="space-y-0.5">
+      <div className="flex items-center gap-1.5 font-semibold text-slate-800">
+        <CalendarClock className="size-4 shrink-0 text-slate-400" />
+        <span>{formatDate(task.due_at)}</span>
+      </div>
+      <div className="text-sm text-slate-600">
+        الساعة {formatTime(task.due_at)}
+        {!compact && <span className="text-slate-400"> · {formatHijri(task.due_at)}</span>}
+      </div>
+      {urgency !== 'completed' && (
+        <span className={`inline-block rounded-md px-2 py-0.5 text-xs font-bold ${style.badge}`}>
+          {urgency === 'overdue' ? `متأخرة · ${formatRelative(task.due_at)}` : formatRelative(task.due_at)}
+        </span>
+      )}
+    </div>
+  );
+}
+
+const statusSelectStyles = {
+  pending: 'bg-slate-100 text-slate-700 border-slate-300',
+  in_progress: 'bg-amber-50 text-amber-800 border-amber-300',
+  completed: 'bg-emerald-50 text-emerald-700 border-emerald-300',
+};
+
+export function StatusSelect({ task, supabase, onChanged, disabled }) {
+  const toast = useToast();
+  const [pending, setPending] = useState(null);
+  const change = async (e) => {
+    const status = e.target.value;
+    setPending(status);
+    const { error } = await supabase.from('tasks').update({ status }).eq('id', task.id);
+    if (error) {
+      setPending(null);
+      return toast(arabicError(error), 'error');
+    }
+    await onChanged();
+    setPending(null);
+    toast(`تم تغيير الحالة إلى: ${STATUS_LABELS[status]}`);
+  };
+  const value = pending ?? task.status;
+  return (
+    <select
+      aria-label="حالة المهمة"
+      value={value}
+      onChange={change}
+      disabled={disabled || pending !== null}
+      className={`rounded-lg border-2 px-2 py-1.5 text-sm font-bold focus:outline-none focus:ring-2 focus:ring-indigo-200 disabled:opacity-60 ${statusSelectStyles[value]}`}
+    >
+      {Object.entries(STATUS_LABELS).map(([key, label]) => (
+        <option key={key} value={key}>
+          {label}
+        </option>
+      ))}
+    </select>
+  );
+}
+
+const emptyForm = { client_name: '', description: '', case_type: '', assigned_to: '', due_at: '', notes: '', status: 'pending' };
+
+export function TaskFormModal({ open, task, members, supabase, onClose, onSaved }) {
+  const toast = useToast();
+  const editing = !!task;
+  const [form, setForm] = useState(() =>
+    task
+      ? {
+          client_name: task.client_name,
+          description: task.description,
+          case_type: task.case_type || '',
+          assigned_to: task.assigned_to,
+          due_at: toLocalInput(task.due_at),
+          notes: task.notes || '',
+          status: task.status,
+        }
+      : emptyForm,
+  );
+  const [errors, setErrors] = useState({});
+  const [serverError, setServerError] = useState('');
+  const [saving, setSaving] = useState(false);
+  const set = (key) => (e) => setForm((f) => ({ ...f, [key]: e.target.value }));
+
+  // الموظفون النشطون، مع إبقاء المكلف الحالي ظاهراً حتى لو عُطّل حسابه
+  const assignable = members.filter((m) => m.active || m.id === task?.assigned_to);
+  const caseTypes = form.case_type && !CASE_TYPES.includes(form.case_type) ? [...CASE_TYPES, form.case_type] : CASE_TYPES;
+
+  const save = async (e) => {
+    e?.preventDefault();
+    const next = {};
+    if (!form.client_name.trim()) next.client_name = 'اسم العميل مطلوب';
+    if (!form.description.trim()) next.description = 'بيان المهمة مطلوب';
+    if (!form.assigned_to) next.assigned_to = 'اختر الموظف المكلف';
+    const dueAt = fromLocalInput(form.due_at);
+    if (!dueAt) next.due_at = 'حدد تاريخ ووقت الانتهاء';
+    setErrors(next);
+    if (Object.keys(next).length) return;
+
+    const payload = {
+      client_name: form.client_name.trim(),
+      description: form.description.trim(),
+      case_type: form.case_type || null,
+      assigned_to: form.assigned_to,
+      due_at: dueAt,
+      notes: form.notes.trim() || null,
+      status: form.status,
+    };
+    setSaving(true);
+    setServerError('');
+    const { error } = editing
+      ? await supabase.from('tasks').update(payload).eq('id', task.id)
+      : await supabase.from('tasks').insert(payload);
+    if (error) {
+      setSaving(false);
+      return setServerError(arabicError(error));
+    }
+    await onSaved();
+    toast(editing ? 'تم حفظ التعديلات' : 'تمت إضافة المهمة');
+    onClose();
+  };
+
+  return (
+    <Modal
+      open={open}
+      wide
+      title={editing ? 'تعديل المهمة' : 'مهمة جديدة'}
+      onClose={onClose}
+      footer={
+        <>
+          <Button icon={Save} loading={saving} onClick={save} className="flex-1">
+            {editing ? 'حفظ التعديلات' : 'حفظ المهمة'}
+          </Button>
+          <Button variant="secondary" onClick={onClose} className="flex-1">
+            إلغاء
+          </Button>
+        </>
+      }
+    >
+      <form onSubmit={save} className="grid grid-cols-1 gap-4 sm:grid-cols-2" noValidate>
+        <Field label="اسم العميل" required error={errors.client_name}>
+          {(id) => <input id={id} className={inputClass} value={form.client_name} onChange={set('client_name')} placeholder="مثال: شركة الأمل التجارية" />}
+        </Field>
+        <Field label="نوع القضية">
+          {(id) => (
+            <select id={id} className={inputClass} value={form.case_type} onChange={set('case_type')}>
+              <option value="">— اختر —</option>
+              {caseTypes.map((t) => (
+                <option key={t} value={t}>
+                  {t}
+                </option>
+              ))}
+            </select>
+          )}
+        </Field>
+        <Field label="بيان المهمة" required error={errors.description} className="sm:col-span-2">
+          {(id) => <textarea id={id} rows={3} className={inputClass} value={form.description} onChange={set('description')} placeholder="وصف واضح للمهمة المطلوبة" />}
+        </Field>
+        <Field label="المكلف بالمهمة" required error={errors.assigned_to}>
+          {(id) => (
+            <select id={id} className={inputClass} value={form.assigned_to} onChange={set('assigned_to')}>
+              <option value="">— اختر الموظف —</option>
+              {assignable.map((m) => (
+                <option key={m.id} value={m.id}>
+                  {m.name}
+                  {m.role === 'admin' ? ' (مدير)' : ''}
+                  {!m.active ? ' (معطّل)' : ''}
+                </option>
+              ))}
+            </select>
+          )}
+        </Field>
+        <Field label="موعد الانتهاء" required error={errors.due_at}>
+          {(id) => <input id={id} type="datetime-local" className={inputClass} value={form.due_at} onChange={set('due_at')} />}
+        </Field>
+        <Field label="الحالة">
+          {(id) => (
+            <select id={id} className={inputClass} value={form.status} onChange={set('status')}>
+              {Object.entries(STATUS_LABELS).map(([value, label]) => (
+                <option key={value} value={value}>
+                  {label}
+                </option>
+              ))}
+            </select>
+          )}
+        </Field>
+        <Field label="ملاحظات" className="sm:col-span-2">
+          {(id) => <textarea id={id} rows={2} className={inputClass} value={form.notes} onChange={set('notes')} placeholder="أي تفاصيل إضافية (اختياري)" />}
+        </Field>
+        {serverError && <Alert className="sm:col-span-2">{serverError}</Alert>}
+        <button type="submit" hidden />
+      </form>
+    </Modal>
+  );
+}

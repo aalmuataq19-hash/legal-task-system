@@ -1,0 +1,25 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Cairo", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Tahoma, sans-serif;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  @apply bg-slate-50 text-slate-800 antialiased;
+  min-height: 100dvh;
+}
+
+/* حقول التاريخ تبقى من اليسار لليمين حتى تُقرأ الأرقام بشكل صحيح */
+input[type="datetime-local"] {
+  direction: ltr;
+  text-align: right;
+}
+
+.ltr {
+  direction: ltr;
+  unicode-bidi: plaintext;
+}
